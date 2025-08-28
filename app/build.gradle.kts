@@ -50,7 +50,7 @@ dependencies {
     implementation(libs.coroutines.core)
     implementation("org.osmdroid:osmdroid-android:7.2.0")
     implementation("org.osmdroid:osmdroid-wms:7.2.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.2")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.3")
     implementation("com.google.android.gms:play-services-maps:19.2.0")
 }
