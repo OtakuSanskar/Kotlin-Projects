@@ -87,7 +87,7 @@ class FitnessRepository(private val context: Context) {
     }
 
     private fun updateLocationData(newLocation: Location) {
-        if (isActuallyMoving) {
+        if (!isActuallyMoving) {
             Log.d("FitnessRepository", "Not Actually Moving")
             return
         }
@@ -165,8 +165,8 @@ class FitnessRepository(private val context: Context) {
         if(hours<=0)    return 0f
         val speed = (if(hours>0) distance/hours else 0.0)
         val met = when {
-            speed <= 4.0 ->2
-            speed <= 8.0 ->7
+            speed <= 4.0 ->2.0
+            speed <= 8.0 ->7.0
             speed <= 11.0 -> 8.5
             else -> 10.0
         }
