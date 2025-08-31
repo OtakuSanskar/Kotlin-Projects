@@ -33,6 +33,9 @@ class FitnessViewModel(private val repository: FitnessRepository,
     private var durationUpdateJob: Job? = null
     private var activeTime:Long = 0
     private var lastUpdateTime: Long = 0
+    private var trackingStartTime: Long = 0
+    private var pausedDuration: Long = 0
+    private var pausedTime: Long = 0
 
     init{
         repository.totalDistance.observeForever{
@@ -54,8 +57,8 @@ class FitnessViewModel(private val repository: FitnessRepository,
             _duration.value = 0
             _calories.value = 0f
             _distance.value = 0f
-            activeTime=0
-            lastUpdateTime=System.currentTimeMillis()
+            trackingStartTime = System.currentTimeMillis()
+            pausedDuration = 0
             _isTracking.value = true
             repository.startTracking()
             startDurationUpdate()
@@ -71,7 +74,8 @@ class FitnessViewModel(private val repository: FitnessRepository,
         durationUpdateJob?.cancel()
         durationUpdateJob=viewModelScope.launch {
             while(_isTracking.value == true && isActive){
-                _duration.value = repository.getCurrentDuration()
+                val currentDuration = System.currentTimeMillis() - trackingStartTime
+                _duration.value = currentDuration
                 updateCalories()
                 delay(1000)
             }
@@ -81,7 +85,7 @@ class FitnessViewModel(private val repository: FitnessRepository,
     private fun updateCalories() {
         val weight = _userWeight.value ?: 70f
         val distance = _distance.value ?: 0f
-        val duration = _duration.value ?: 0
+        val duration = _duration.value ?: 0L
         val newCalories = repository.calculateCalories(weight, distance, duration)
         _calories.value = newCalories
     }
@@ -95,26 +99,32 @@ class FitnessViewModel(private val repository: FitnessRepository,
 
     fun stopWorkout(){
         _isTracking.value = false
+        _duration.value=0
+        _calories.value =0f
+        _distance.value = 0f
+        _pace.value = 0.0
         repository.stopTracking()
+        repository.clearTracking()
         stopDurationUpdate()
         lastUpdateTime=0
         activeTime=0
+        trackingStartTime=0
+        pausedDuration=0
     }
 
     fun pauseWorkout(){
         _isTracking.value = false
+        pausedTime = System.currentTimeMillis()
+        pausedDuration = _duration.value ?: 0
         repository.pauseTracking()
         stopDurationUpdate()
-//        lastUpdateTime=0
     }
 
     fun resumeWorkout(){
-        viewModelScope.launch {
-            lastUpdateTime = System.currentTimeMillis() - activeTime
-            _isTracking.value = true
-            repository.startTracking()
-            startDurationUpdate()
-        }
+        trackingStartTime = System.currentTimeMillis() - pausedDuration
+        _isTracking.value = true
+        repository.resumeTracking()
+        startDurationUpdate()
     }
 
     fun clearWorkout(){

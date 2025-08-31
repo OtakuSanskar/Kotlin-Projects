@@ -78,13 +78,13 @@ class FitnessRepository(private val context: Context) {
         lastMovementTime = currentTime
     }
 
-    fun getCurrentDuration(): Long {
-        return if (_isTracking.value == true) {
-            System.currentTimeMillis() - trackingStartTime
-        } else {
-            totalDuration
-        }
-    }
+//    fun getCurrentDuration(): Long {
+//        return if (_isTracking.value == true) {
+//            System.currentTimeMillis() - trackingStartTime
+//        } else {
+//            totalDuration
+//        }
+//    }
 
     private fun updateLocationData(newLocation: Location) {
         if (!isActuallyMoving) {
@@ -103,6 +103,7 @@ class FitnessRepository(private val context: Context) {
         if (distanceFromLastPoint > MOVEMENT_THRESHOLD / 1000f) {
             currentPoints.add(latling)
             _routePoints.postValue(currentPoints)
+
             val currentTotal = totalDistance.value ?: 0f
             val newTotal = currentTotal + distanceFromLastPoint
             _totalDistance.postValue(newTotal)
@@ -194,14 +195,20 @@ class FitnessRepository(private val context: Context) {
     fun stopTracking(){
         _isTracking.postValue(false)
         locationClient.removeLocationUpdates(locationCallback)
-        totalDuration = System.currentTimeMillis() - trackingStartTime
+        totalDuration = 0
         resetTimers()
     }
 
     fun pauseTracking(){
         _isTracking.postValue(false)
         locationClient.removeLocationUpdates(locationCallback)
-        totalDuration = System.currentTimeMillis() - trackingStartTime
+    }
+
+    fun resumeTracking(){
+        if(checkLocationPermission()){
+            _isTracking.postValue(true)
+            requestLocationUpdates()
+        }
     }
 
     private fun resetTimers(){
