@@ -11,23 +11,23 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
-import kotlin.time.Duration
 
 class FitnessRepository(private val context: Context) {
+    private var cumulativeCalories: Float = 0f
     private val locationClient = LocationServices.getFusedLocationProviderClient(context)
     private var lastValidLocation: Location? = null
     private var isActuallyMoving = false
     private var totalDuration:Long = 0
     private var trackingStartTime:Long  = 0
-    private var MOVEMENT_THRESHOLD = 1.0f
+    private var MOVEMENT_THRESHOLD = 3.0f
     private val _routePoints = MutableLiveData<List<LatLng>>(emptyList())
-    private val routePoints: LiveData<List<LatLng>> = _routePoints
+    val routePoints: LiveData<List<LatLng>> = _routePoints
     private val _totalDistance = MutableLiveData<Float>(0f)
-    private val totalDistance: LiveData<Float> = _totalDistance
+    val totalDistance: LiveData<Float> = _totalDistance
     private val _isTracking = MutableLiveData<Boolean>(false)
-    private val isTracking: LiveData<Boolean> = _isTracking
+    val isTracking: LiveData<Boolean> = _isTracking
     private val _currentLocation = MutableLiveData<LatLng?>(null)
-    private val currentLocation: LiveData<LatLng?> = _currentLocation
+    val currentLocation: LiveData<LatLng?> = _currentLocation
     private var startTime: Long = 0
     private var activeMovementTime: Long = 0
     private var lastMovementTime:Long = 0
@@ -53,7 +53,7 @@ class FitnessRepository(private val context: Context) {
                     val timeGap = currentTime - lastLocationUpdateTime
                     val speed = if (timeGap > 0) (distance * 1000) / timeGap else 0f
 
-                    isActuallyMoving = distance > MOVEMENT_THRESHOLD && speed < 8f && speed > 0.3f
+                    isActuallyMoving = distance > MOVEMENT_THRESHOLD && speed < 8f && speed > 0.5f
                     if (isActuallyMoving) {
                         updateMovementTime(currentTime)
                         updateLocationData(newLocation)
@@ -78,7 +78,7 @@ class FitnessRepository(private val context: Context) {
         lastMovementTime = currentTime
     }
 
-    fun gerCurrentDuration(): Long {
+    fun getCurrentDuration(): Long {
         return if (_isTracking.value == true) {
             System.currentTimeMillis() - trackingStartTime
         } else {
@@ -157,41 +157,51 @@ class FitnessRepository(private val context: Context) {
         )
         return results[0] / 1000f // Convert meters to kilometers
     }
-    private fun calculateCalories(weight:Float, distance:Float, duration:Long): Float{
-        if(duration<1000){
-            return 0f
-        }
+    fun calculateCalories(weight:Float, distance:Float, duration:Long): Float{
+        if(duration<1000) return cumulativeCalories
+
         val hours = duration / (1000.0 * 60.0 * 60.0)
-        if(hours<=0)    return 0f
-        val speed = (if(hours>0) distance/hours else 0.0)
+        if(hours<=0)    return cumulativeCalories
+
+        val speed = if(hours>0) distance/hours else 0.0
         val met = when {
             speed <= 4.0 ->2.0
             speed <= 8.0 ->7.0
             speed <= 11.0 -> 8.5
             else -> 10.0
+        }.toFloat()
+
+        if (isActuallyMoving) {
+            cumulativeCalories = (met * weight * hours).toFloat()
         }
-        val calories = (met * weight * hours).toFloat()
-        return calories
+        return cumulativeCalories
     }
-    private fun calculatePace(distance: Float, duration: Long): Double{
+
+    fun calculatePace(distance: Float, duration: Long): Double{
         if(duration<1000 || distance<=0){
             return 0.0
         }
         val hours = duration / (1000.0 * 60.0 * 60.0)
         return distance/hours
     }
-    private fun startTracking(){
+    fun startTracking(){
         if(checkLocationPermission()){
             initializeTracking()
             requestLocationUpdates()
         }
     }
 
-    private fun stopTracking(){
+    fun stopTracking(){
         _isTracking.postValue(false)
         locationClient.removeLocationUpdates(locationCallback)
         totalDuration = System.currentTimeMillis() - trackingStartTime
         resetTimers()
+    }
+
+    fun pauseTracking(){
+        _isTracking.postValue(false)
+        locationClient.removeLocationUpdates(locationCallback)
+        totalDuration = System.currentTimeMillis() - trackingStartTime
     }
 
     private fun resetTimers(){
@@ -209,5 +219,6 @@ class FitnessRepository(private val context: Context) {
         resetTimers()
         lastValidLocation = null
         isActuallyMoving = false
+        cumulativeCalories = 0f
     }
 }
