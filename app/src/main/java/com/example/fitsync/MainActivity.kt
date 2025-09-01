@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupButtons(){
         binding.actionButton.setOnClickListener {
-            if(!viewModel.isTracking.value!!){
+            if(!viewModel.isTracking.value!! && !isWorkoutPaused){
                 val weight = binding.weightInput.text.toString().toFloatOrNull()
                 if( weight == null || weight <= 40){
                     binding.weightInput.error = "Enter a valid weight"
@@ -142,6 +142,8 @@ class MainActivity : AppCompatActivity() {
         viewModel.startWorkout()
     }
     private fun stopTracking(){
+        isWorkoutPaused = false
+        binding.pauseResumeButton.visibility = View.GONE
         viewModel.stopWorkout()
     }
 
