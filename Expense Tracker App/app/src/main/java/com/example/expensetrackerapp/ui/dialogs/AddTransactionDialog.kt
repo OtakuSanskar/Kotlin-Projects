@@ -1,60 +1,143 @@
 package com.example.expensetrackerapp.ui.dialogs
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.expensetrackerapp.R
+import com.example.expensetrackerapp.data.model.Category
+import com.example.expensetrackerapp.data.model.Transaction
+import com.example.expensetrackerapp.data.model.TransactionType
+import com.example.expensetrackerapp.databinding.FragmentAddTransactionDialogBinding
+import com.example.expensetrackerapp.ui.viewModel.FinanceViewModel
+import com.google.android.material.tabs.TabLayout
+import kotlinx.coroutines.launch
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class AddTransactionDialog : DialogFragment() {
+    private var _binding: FragmentAddTransactionDialogBinding?=null
+    private val binding get()= _binding!!
 
-/**
- * A simple [Fragment] subclass.
- * Use the [AddTransactionDialog.newInstance] factory method to
- * create an instance of this fragment.
- */
-class AddTransactionDialog : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
-
+    private lateinit var viewModel: FinanceViewModel
+    private var currentType = TransactionType.EXPENSE
+    private var categories = listOf<Category>()
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_add_transaction_dialog, container, false)
+        _binding = FragmentAddTransactionDialogBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment AddTransactionDialog.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            AddTransactionDialog().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel = ViewModelProvider(requireActivity())[FinanceViewModel::class.java]
+
+        setupTypeSelection()
+        setupCategorySpinner()
+        setupButton()
+        observeCategories()
+    }
+
+    private fun setupTypeSelection() {
+        // Setup tab selection for Income/Expense
+        binding.typeTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                currentType = when (tab?.position) {
+                    0 -> TransactionType.INCOME
+                    else -> TransactionType.EXPENSE
                 }
+                // Update categories based on selected type
+                observeCategories()
             }
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+    }
+    private fun observeCategories() {
+        // Observe categories based on selected type
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.getCategoriesByType(currentType).collect { newCategories ->
+                categories = newCategories
+                updateCategorySpinner()
+            }
+        }
+    }
+    private fun updateCategorySpinner() {
+        // Update the category spinner with the available categories
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_dropdown_item_1line,
+            categories.map { it.name }
+        )
+        binding.spinnerCategory.setAdapter(adapter)
+    }
+    private fun setupCategorySpinner() {
+        // Setup the category spinner
+        val adapter = ArrayAdapter<String>(
+            requireContext(),
+            android.R.layout.simple_dropdown_item_1line,
+            mutableListOf()
+        )
+        binding.spinnerCategory.setAdapter(adapter)
+    }
+    private fun setupButton() {
+        // Handle save button click
+        binding.btnSave.setOnClickListener {
+            // Validate and save transactions
+            if(validateInput()) {
+                saveTransaction()
+                dismiss()
+            }
+        }
+
+        // Handle cancel button click
+        binding.btnCancel.setOnClickListener {
+            dismiss()
+        }
+    }
+    private fun validateInput(): Boolean {
+
+        // Validate them all
+        val amount = binding.etAmount.text.toString()
+        if (amount.isEmpty() || amount.toDoubleOrNull() == null) {
+            binding.etAmount.error = getString(R.string.error_invalid_amount)
+            return false
+        }
+
+        if(binding.etDescription.text.toString().isEmpty()) {
+            binding.etDescription.error = getString(R.string.error_empty_description)
+            return false
+        }
+
+        if(binding.spinnerCategory.text.toString().isEmpty()) {
+            binding.spinnerCategory.error = getString(R.string.error_category_required)
+            return false
+        }
+        return true
+    }
+    private fun saveTransaction() {
+        val amount = binding.etAmount.text.toString().toDouble()
+        val description = binding.etDescription.text.toString()
+        val category = binding.spinnerCategory.text.toString()
+
+        val transaction = Transaction(
+            amount=amount,
+            description=description,
+            category=category,
+            type=currentType,
+            date=System.currentTimeMillis()
+        )
+        viewModel.addTransaction(transaction)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

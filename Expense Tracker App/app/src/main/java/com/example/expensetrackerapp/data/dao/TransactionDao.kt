@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import com.example.expensetrackerapp.data.model.CategoryTotal
 import com.example.expensetrackerapp.data.model.Transaction
 import com.example.expensetrackerapp.data.model.TransactionType
 import kotlinx.coroutines.flow.Flow
@@ -20,12 +21,12 @@ interface TransactionDao {
     suspend fun getTotalByType(type: TransactionType): Double?
 
     @Query("""
-        SELECT category, SUM(amount) as total
+        SELECT category as categoryName, COALESCE(SUM(amount), 0.0) as totalAmount
         FROM transactions
         WHERE type = :type AND date >= :startDate
         GROUP BY category
     """)
-    fun getCategoryTotals(type: TransactionType, startDate: Long=0): Flow<Map<String, Double>>
+    fun getCategoryTotals(type: TransactionType, startDate: Long=0): Flow<List<CategoryTotal>>
 
     @Insert
     suspend fun insert(transaction: Transaction)

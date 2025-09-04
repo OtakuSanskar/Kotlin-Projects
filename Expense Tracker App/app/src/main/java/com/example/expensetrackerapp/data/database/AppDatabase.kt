@@ -5,6 +5,7 @@ import android.graphics.Color
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.expensetrackerapp.data.dao.CategoryDao
 import com.example.expensetrackerapp.data.dao.TransactionDao
@@ -17,8 +18,10 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [Transaction::class, Category::class],
-    version = 1
+    version = 1,
+    exportSchema = false
 )
+@TypeConverters(TransactionTypeConverter::class)
 abstract class AppDatabase : RoomDatabase(){
     abstract fun transactionDao(): TransactionDao
     abstract fun categoryDao(): CategoryDao
