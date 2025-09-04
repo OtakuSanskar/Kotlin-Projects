@@ -21,7 +21,7 @@ interface TransactionDao {
     suspend fun getTotalByType(type: TransactionType): Double?
 
     @Query("""
-        SELECT category as categoryName, COALESCE(SUM(amount), 0.0) as totalAmount
+        SELECT category as name, COALESCE(SUM(amount), 0.0) as total
         FROM transactions
         WHERE type = :type AND date >= :startDate
         GROUP BY category

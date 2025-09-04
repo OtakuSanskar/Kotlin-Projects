@@ -19,7 +19,7 @@ class TransactionsFragment : Fragment() {
     private var _binding: FragmentTransactionsBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TransactionsViewModel by viewModels()
-    private lateinit var categoryAdapter: TransactionAdapter
+    private lateinit var transactionAdapter: TransactionAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -76,7 +76,7 @@ class TransactionsFragment : Fragment() {
     }
     private fun observeTransactions() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.tranactions.collect { transactions ->
+            viewModel.transactions.collect { transactions ->
                 transactionAdapter.submitList(transactions)
             }
         }

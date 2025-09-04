@@ -22,7 +22,7 @@ class AddTransactionDialog : DialogFragment() {
     private val binding get()= _binding!!
 
     private lateinit var viewModel: FinanceViewModel
-    private var currentType = TransactionType.EXPENSE
+    private var currentType = TransactionType.INCOME
     private var categories = listOf<Category>()
     override fun onCreateView(
         inflater: LayoutInflater,

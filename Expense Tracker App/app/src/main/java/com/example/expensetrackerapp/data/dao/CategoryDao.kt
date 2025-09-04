@@ -18,7 +18,7 @@ interface CategoryDao {
     fun getCategoriesByType(type: TransactionType): Flow<List<Category>>
 
     @Query("""
-        SELECT c.name as categoryName, COALESCE(SUM(t.amount), 0.0) AS totalAmount
+        SELECT c.name as name, COALESCE(SUM(t.amount), 0.0) AS total
         FROM categories c
         LEFT JOIN transactions t ON c.name = t.category
         WHERE c.type = :type

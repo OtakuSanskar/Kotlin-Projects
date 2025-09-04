@@ -11,6 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.expensetrackerapp.data.model.DashboardState
 import com.example.expensetrackerapp.data.model.ExpenseCategoryData
 import com.example.expensetrackerapp.databinding.FragmentDashboardBinding
+import com.github.mikephil.charting.animation.Easing
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
@@ -47,11 +49,29 @@ class DashboardFragment : Fragment() {
             description.isEnabled = true
             setUsePercentValues(true)
             setDrawEntryLabels(false)
-            legend.isEnabled = true
             isDrawHoleEnabled = true
             holeRadius = 58f
             setHoleColor(Color.TRANSPARENT)
-            setTransparentCircleRadius(61f)
+            transparentCircleRadius = 61f
+            setTransparentCircleColor(Color.WHITE)
+            setTransparentCircleAlpha(110)
+            setEntryLabelColor(Color.WHITE)
+            setEntryLabelTextSize(12f)
+
+            legend.apply {
+                isEnabled=true
+                orientation = Legend.LegendOrientation.VERTICAL
+                horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
+                verticalAlignment = Legend.LegendVerticalAlignment.CENTER
+                xEntrySpace = 10f
+                yEntrySpace=0f
+                yOffset=0f
+                textSize = 12f
+                formSize = 16f
+                setDrawInside(false)
+            }
+            // Animation
+            animateY(1400, Easing.EaseInOutQuad)
         }
     }
 

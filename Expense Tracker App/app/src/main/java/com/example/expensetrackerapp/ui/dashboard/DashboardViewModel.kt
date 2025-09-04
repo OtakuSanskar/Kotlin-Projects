@@ -16,9 +16,23 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         AppDatabase.getDatabase(application).transactionDao(),
         AppDatabase.getDatabase(application).categoryDao()
     )
+
+    // Create reactive flows for transaction totals
+    private val incomeTotalFLow = repository.allTransactions
+        .map { transactions ->
+            transactions.filter { it.type == TransactionType.INCOME }
+                .sumOf { it.amount }
+        }
+
+    private val expenseTotalFlow = repository.allTransactions
+        .map { transactions ->
+            transactions.filter { it.type == TransactionType.EXPENSE }
+                .sumOf { it.amount }
+        }
+
     val dashboardState: StateFlow<DashboardState> = combine(
-        flow { emit(repository.getTotalByType(TransactionType.INCOME)) },
-        flow { emit(repository.getTotalByType(TransactionType.EXPENSE)) },
+        incomeTotalFLow,
+        expenseTotalFlow,
         repository.getCategoryTotals(TransactionType.EXPENSE)
     ) { income:Double, expense:Double, categoryTotals: List<CategoryTotal> ->
         DashboardState(
